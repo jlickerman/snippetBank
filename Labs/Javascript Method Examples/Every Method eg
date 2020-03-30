@@ -1,0 +1,31 @@
+function ispositive(element, index, array) {
+    return element > 0;
+  }
+  //console.log([11, 89, 23, 7, 98].every(ispositive)); 
+
+
+  ///////////////////////////////////////////////////
+ // EXAMPLE #2 
+ ///////////////////////////////////////////////////
+
+  let result = [10, 5, 20, 100].every(function(number){
+    return number < 150
+})
+//console.log(result) // true
+
+ ///////////////////////////////////////////////////
+ // EXAMPLE #3 
+ ///////////////////////////////////////////////////
+
+ // Create new array
+const array = [20, 21, 23, 15, 2]
+
+// Create condition
+const isLessThan100 = (number)=> number < 100
+
+// Apply function 
+let result2 = array.every(isLessThan100) //"Check whether or not ALL elements in array satisfy this condition."
+
+// Output result
+console.log(result2)
+

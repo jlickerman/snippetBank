@@ -1,0 +1,231 @@
+const target = { a: 1, b: 2 };
+const source = { b: 4, c: 5 };
+
+const returnedTarget = Object.assign(target, source);
+
+console.log(target);
+// expected output: Object { a: 1, b: 4, c: 5 }
+
+console.log(returnedTarget);
+// expected output: Object { a: 1, b: 4, c: 5 }
+
+
+
+var destination = {network_url: 'zichael', sally: 'michael'}
+var startingPoint = {network_url: 'lol.com'}
+
+var updateDest = Object.assign(destination, startingPoint);
+
+console.log(updateDest);
+
+
+var pointA = {enteredUrl = 'user.michael.com'};
+var pointB = {validatedUrl = 'michael.com'};
+
+var validatedAf = Object.assign(pointB, pointA);
+console.log(validatedAf);
+
+
+
+
+
+
+
+
+
+
+var wf = (function() {
+    var sp = workflow.scratchpad;
+    var mapGR = global.mapGR;
+    var fields = mapGR(current);
+    var vars = fields.variables;
+    sp.vars = vars;
+    gs.include('Object.assign');
+
+    function initialize() {
+        current.short_description = 'URL Whitelist request for ' + vars.requestedfor_dv;
+    }
+
+    function transformArray(sourceArray, sourceKeyPrefix, targetKeyPrefix) {
+        var targetArray = sourceArray.map(function(sourceObject) {
+            var targetObject = transformObject(sourceObject, sourceKeyPrefix, targetKeyPrefix);
+            return targetObject;
+        });
+        return targetArray;
+    }
+
+    function transformObject(sourceObject, sourceKeyPrefix, targetKeyPrefix) {
+        var targetObject = {};
+        for (var sourceKey in sourceObject) {
+            var targetKey = sourceKey.replace(sourceKeyPrefix, targetKeyPrefix);
+            var targetValue = sourceObject[sourceKey];
+            targetObject[targetKey] = targetValue;
+        }
+        return targetObject;
+    }
+
+    function buildNetworkArray(sourceArray) {
+        var targetArray = sourceArray.map(function(sourceObject) {
+            var targetObject = buildNetworkObject(sourceObject);
+            return targetObject;
+        });
+        return targetArray;
+    }
+
+    function buildNetworkObject(sourceObject) {
+        return Object.assign(getNetworkTemplate(), sourceObject);
+    }
+
+    function getNetworkTemplate() {
+        return {
+            network_url: '',
+            network_port: '',
+            network_other_port: '',
+            network_url_category: '',
+            network_access_policy: '',
+            network_status_network: 'pending_review',
+            network_close_notes: '',
+        };
+    }
+
+    function getMergedArrayOfObjects(targetArray, sourceArray, targetPrefix) {
+        return targetArray.map(function(targetObj) {
+            var matchedSourceObj = findMatchedObjects(targetObj, sourceArray, targetPrefix);
+
+            if (matchedSourceObj) {
+                var mergedTargetObj = Object.assign(targetObj, matchedSourceObj);
+                return mergedTargetObj;
+            } else {
+                return targetObj;
+            }
+        });
+    }
+
+    function findMatchedObjects(targetObj, sourceArray, targetPrefix) {
+        var matchedSourceObj = sourceArray.filter(function(sourceObj) {
+            return sourceObj[targetPrefix + 'url'] === targetObj[targetPrefix + 'url'];
+        });
+        return matchedSourceObj[0];
+    }
+// JL: Replaced domainLists with arguments in the function body, and removed it it from the parameters. 
+    function sendRequests(domainList) {
+        var responsBodies = domainList.map(function(url) {
+            return getVirusTotalResponse(url);
+        });
+        sp.virus_total_response_bodies = responsBodies;
+        return responsBodies;
+    }
+
+    function getVirusTotalResponse(url) {
+        var r = new sn_ws.RESTMessageV2();
+        r.setHttpMethod('get');
+        r.setEndpoint('http://www.virustotal.com/vtapi/v2/domain/report');
+        r.setQueryParameter('domain', url);
+        r.setQueryParameter('apikey', '2956e0b060e13f1c56559d52b70f8ca48f4bb7ea566029ae61a4dc74c5de795d');
+        var response = r.execute();
+        var responseBody = response.getBody();
+
+        var body = JSON.parse(responseBody);
+
+        var result = { url: url };
+        var FORCEPOINT = 'Forcepoint ThreatSeeker category';
+        var WEBUTATION = 'Webutation domain info';
+        for (var property in body) {
+            if (property === FORCEPOINT) result['forcePointThreatSeekerCategory'] = body[property];
+
+            if (property === WEBUTATION) result['webutationDomainInfo'] = body[property];
+        }
+        return result;
+    }
+
+    function getEvalStatuses(targetArray, sourceArray) {
+        return targetArray.map(function(targetObj) {
+            var matchedSourceObj = findMatchedObjectStatuses(targetObj, sourceArray);
+
+            if (matchedSourceObj) {
+                targetObj.tktm_status_infosec = transformStatus(matchedSourceObj.decision);
+                return targetObj;
+            } else {
+                // this could not be set previously
+                targetObj.tktm_status_infosec = 'pending_review';
+                return targetObj;
+            }
+        });
+    }
+
+    function findMatchedObjectStatuses(targetObj, sourceArray) {
+        var matchedSourceObj = sourceArray.filter(function(sourceObj) {
+            return sourceObj.domain === targetObj.tktm_url;
+        });
+        return matchedSourceObj[0];
+    }
+
+    function transformStatus(eval_status) {
+        if (eval_status === 'Approve') return 'auto_approved';
+        if (eval_status === 'Deny') return 'auto_rejected';
+        if (eval_status === 'Eval') return 'pending_review';
+    }
+
+    function setExitCondition(updatedVS) {
+        var getTktmStatuses = updatedVS.map(function(obj) {
+            return obj.tktm_status_infosec;
+        });
+
+        var isAllAutoApproved = getTktmStatuses.every(function(status) {
+            return status === 'auto_approved';
+        });
+
+        var isAllAutoRejected = getTktmStatuses.every(function(status) {
+            return status === 'auto_rejected';
+        });
+
+        if (isAllAutoApproved) {
+            return 'auto_approved';
+        } else if (isAllAutoRejected) {
+            return 'auto_rejected';
+        } else {
+            return 'pending_review';
+        }
+    }
+
+    function updatApprovalComments(targetArray, sourceArray) {
+        var updatedTargetArray = [];
+        targetArray.forEach(function(targetObj, newPrefix) {
+            var matchedSourceObj = findMatchedApprovalObjects(targetObj, sourceArray);
+
+            if (matchedSourceObj) {
+				//targetObj[newPrefix]
+				//targetObj['infosec_approval_comments'] = 'Auto-approval: ' + matchedSourceObj.comments;
+                targetObj.infosec_approval_comments = 'Auto-approval: ' + matchedSourceObj.comments;
+                updatedTargetArray.push(targetObj);
+            }
+            updatedTargetArray.push(targetObj);
+        });
+        var deDuped = updatedTargetArray. filter(function(obj, index) {
+            return updatedTargetArray.indexOf(obj) >= index;
+        });
+        return deDuped;
+    }
+
+    function findMatchedApprovalObjects(targetObj, sourceArray) {
+        var matchedSourceObj = sourceArray.filter(function(sourceObj) {
+            return sourceObj.domain === targetObj.infosec_url;
+        });
+        return matchedSourceObj[0];
+    }
+
+    return {
+        initialize: initialize,
+        transformArray: transformArray,
+        buildNetworkArray: buildNetworkArray,
+        getMergedArrayOfObjects: getMergedArrayOfObjects,
+        sendRequests: sendRequests,
+        getEvalStatuses: getEvalStatuses,
+        setExitCondition: setExitCondition,
+        updatApprovalComments: updatApprovalComments,
+    };
+})();
+
+
+
+

@@ -1,0 +1,26 @@
+const target = { a: 1, b: 2 };
+const source = { b: 4, c: 5 };
+
+const returnedTarget = Object.assign(target, source);
+
+console.log(target);
+// expected output: Object { a: 1, b: 4, c: 5 }
+
+console.log(returnedTarget);
+// expected output: Object { a: 1, b: 4, c: 5 }
+
+///////////////////////////////////////////////
+
+const plants = {
+    fern: "rainforest", 
+    cactus: "desert", 
+    palm_tree: "arctic",
+};
+
+const plantsEdit = {
+    palm_tree: "subtropics",
+};
+
+const correctHabitat = Object.assign(plants, plantsEdit);
+
+console.log(correctHabitat);

@@ -1,0 +1,56 @@
+// source array of objects
+var chicago_users = [
+    {
+    first_name: 'John',
+    last_name: 'Smith',
+    full_name: 'John Smith',
+    user_name: 'jsmith',
+    email: 'john.smith@example.com',
+    },
+    {
+    first_name: 'Sally',
+    last_name: 'Jones',
+    full_name: 'Sally Jones',
+    user_name: 'sjones',
+    email: 'sally.jones@example.com',
+    },
+    {
+    
+    first_name: 'Chuck',
+    last_name: 'Dills',
+    full_name: 'Chuck Dills',
+    user_name: 'cdills',
+    email: 'chuck.dills@example.com',
+    },
+    ];
+    
+    // Template of things to add/merge
+    var templateObject = {
+    desk_phone: '',
+    mobile_phone: '',
+    city: 'Chicago',
+    state: 'IL',
+    zip_code: '60604',
+    };
+    
+    function mergeArray(sourceArray, mergeTemplate) {
+        var targetArray = sourceArray.map(function(sourceObject) {
+        var targetObject = mergeObject(sourceObject, mergeTemplate);
+        return targetObject;
+    });
+    return targetArray;
+}
+
+function mergeObject(sourceObject, mergeTemplate) {
+    //var targetObject = {};
+    // Each target object 'sourceObject' is the recipient of the entries contained in the mergeTemplate
+    // Instead of creating a brand new object to fill, lets simply add the merge fields to the existing object.
+    for (var mergeKey in mergeTemplate) {
+        var mergeValue = mergeTemplate[mergeKey];
+        sourceObject[mergeKey] = mergeValue;
+    }
+    return sourceObject;
+}
+
+var newUserRecords = mergeArray(chicago_users, templateObject);
+console.log(newUserRecords);

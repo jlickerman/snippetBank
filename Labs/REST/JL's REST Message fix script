@@ -1,0 +1,30 @@
+var restMessage = new sn_ws.RESTMessageV2();
+//restMessage.setBasicAuth("admin", "admin");
+restMessage.setHttpMethod("get");
+//var domain_name = 'github.com';
+restMessage.setEndpoint("https://www.virustotal.com/vtapi/v2/domain/report?apikey=2956e0b060e13f1c56559d52b70f8ca48f4bb7ea566029ae61a4dc74c5de795d&domain=facebook.com");
+
+//restMessage.setRequestBody("{\"short_description\" : \"Test incident\"}");
+try {
+	var response = restMessage.execute();
+    var responseBody = response.getBody();
+    var httpStatus = response.getStatusCode();
+
+	var resp = JSON.parse(responseBody);
+	
+    var forcepoint = resp['Forcepoint ThreatSeeker category'];
+    var webutation = resp["Webutation domain info"];
+	
+	var printWebutation = JSON.stringify(webutation);
+
+	gs.info(forcepoint);
+    gs.info(printWebutation);
+	
+} catch (ex) {
+    var message = ex.message;
+	
+}
+
+//gs.info(responseBody);
+
+

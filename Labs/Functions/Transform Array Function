@@ -1,0 +1,40 @@
+ function transformArray(sourceArray, sourceKeyPrefix, targetKeyPrefix) {
+        var targetArray = sourceArray.map(function(sourceObject) {
+            var targetObject = transformObject(sourceObject, sourceKeyPrefix, targetKeyPrefix);
+            return targetObject;
+        });
+        return targetArray;
+    }
+
+    function transformObject(sourceObject, sourceKeyPrefix, targetKeyPrefix) {
+        var targetObject = {};
+        for (var sourceKey in sourceObject) {
+            var targetKey = sourceKey.replace(sourceKeyPrefix, targetKeyPrefix);
+            var targetValue = sourceObject[sourceKey];
+            targetObject[targetKey] = targetValue;
+        }
+        return targetObject;
+    }
+var srcAry = [ {
+    tktm_url : "cnn.com",
+    tktm_validated_url : "cnn.com",
+    tktm_port : "http_80",
+    tktm_other_port : "123",
+    tktm_status_infosec : "auto_approved"
+  }, {
+    tktm_url : "helloworld.github.com",
+    tktm_validated_url : "helloworld.github.com",
+    tktm_port : "http_80",
+    tktm_status_infosec : "pending_review"
+  }, {
+    tktm_url : "10.10.10.10",
+    tktm_validated_url : "10.10.10.10",
+    tktm_port : "http_80",
+    tktm_other_port : "789",
+    tktm_status_infosec : "pending_review"
+  } ]
+
+
+  
+
+console.log(infosecArray)

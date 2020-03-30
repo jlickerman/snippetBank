@@ -1,0 +1,22 @@
+var times2 = [
+    10, 30, 50
+];
+var areas = [];             
+var area = 0;
+for (var i = 0; i < times2.length; i++) {
+    area = times2[i] * 2;
+    areas.push(area);
+}
+console.log(areas);
+
+
+
+var array1 = [2, 5, 9];
+    var squares = [];
+
+    for (var i = 0; i < array1.length; i++) {
+        squares.push(array1[i] * array1[i]);
+    }
+
+    console.log(squares); // [4, 25, 81]
+    console.log(array1); // [2, 5, 9]

@@ -1,0 +1,96 @@
+var DomainUtil = Class.create();
+DomainUtil.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+    // Copied from https://stackoverflow.com/a/23945027
+    extractHostname: function(url) {
+        var hostname;
+        //find & remove protocol (http, ftp, etc.) and get hostname
+
+        if (url.indexOf('//') > -1) {
+            hostname = url.split('/')[2];
+        } else {
+            hostname = url.split('/')[0];
+        }
+
+        //find & remove port number
+        hostname = hostname.split(':')[0];
+
+        //find & remove "?"
+        hostname = hostname.split('?')[0];
+
+        //find & remove leading "."
+        hostname = hostname.replace(/^\./g, '');
+
+        //find & remove email part
+        hostname = hostname.replace(/^.*@/g, '');
+
+        //remove any quotation mark
+        hostname = hostname.replace(/'|"/g, '');
+
+        return hostname;
+    },
+
+    // The extractRootDomain function works for any of the following permutations:
+    // 'cnn.com/sfrg' > 'cnn.com'
+    // 'http://www.blog.classroom.me.uk/index.php' > 'classroom.me.uk'
+    // 'http://www.youtube.com/watch?v=ClkQA2Lb_iE' > 'youtube.com'
+    // 'https://www.youtube.com/watch?v=ClkQA2Lb_iE' > 'youtube.com'
+    // 'www.youtube.com/watch?v=ClkQA2Lb_iE' > 'youtube.com'
+    // 'ftps://ftp.websitename.com/dir/file.txt' > 'websitename.com'
+    // 'websitename.com:1234/dir/file.txt' > 'websitename.com'
+    // 'example.com?param=value' > 'example.com'
+    // 'https://facebook.github.io/jest/' > 'github.io'
+    // '//youtube.com/watch?v=ClkQA2Lb_iE' > 'youtube.com'
+
+    extractRootDomain: function(url) {
+        var domain = this.extractHostname(url),
+            splitArr = domain.split('.'),
+            arrLen = splitArr.length;
+
+        //extracting the root domain here
+        //if there is a subdomain
+        if (arrLen > 2) {
+            domain = splitArr[arrLen - 2] + '.' + splitArr[arrLen - 1];
+            //check to see if it's using a Country Code Top Level Domain (ccTLD) (i.e. ".me.uk")
+            if (splitArr[arrLen - 2].length == 2 && splitArr[arrLen - 1].length == 2) {
+                //this is using a ccTLD
+                domain = splitArr[arrLen - 3] + '.' + domain;
+            }
+        }
+        return domain;
+    },
+
+    isIPv4Address: function(url) {
+        if (
+            /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
+                url
+            )
+        ) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+
+    isValidDomain: function(url) {
+        if (
+            /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(url)
+        ) {
+            // Also need to filter out domains with wildcards in them
+            if (/\*/.test(url)) {
+                return false;
+            } else if (/\s/.test(url)) {
+                return false;
+            }
+            // Need to invalidate domains that have proofpoint.com in them
+            else if (/urldefense.proofpoint.com/.test(url)) {
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    },
+
+    type: 'DomainUtil'
+});

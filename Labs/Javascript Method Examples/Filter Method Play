@@ -1,0 +1,26 @@
+var arr = [
+    {'zero': '0',
+    'name': 'joe',
+    'network_status_infosec': 'auto_approved',
+    },
+    {
+    'one': 1,
+    'name': 'sally',
+    'network_status_infosec': 'approved',
+    },
+    {
+    'two': 2,
+    'name': 'joe',
+    'network_status_infosec': 'auto_rejected',
+    }
+];
+
+//console.log(arr['zero']);
+
+newArr = arr.filter(function(obj) {
+
+    return (obj.network_status_infosec === 'approved') ||
+          (obj.network_status_infosec === 'auto_approved');
+});
+
+console.log(newArr);

@@ -1,0 +1,48 @@
+// source array of objects
+var global_users = [
+{
+
+u_first_name: 'John',
+u_last_name: 'Smith',
+u_full_name: 'John Smith',
+u_user_name: 'jsmith',
+},
+{
+u_first_name: 'Sally',
+u_last_name: 'Jones',
+u_full_name: 'Sally Jones',
+u_user_name: 'sjones',
+},
+{
+u_first_name: 'Chuck',
+u_last_name: 'Dills',
+u_full_name: 'Chuck Dills',
+u_user_name: 'cdills',
+},
+];
+
+
+
+result = listIn(global_users);
+function listIn(x) {
+    var listOut = [];
+    for (var i=0; i < x.length; i++) {
+        var obj = {};
+        console.log(x[i]); 
+        Object.entries(x[i]).forEach(entry => {
+
+            var key = entry[0];
+            var newKey = key.replace('u_', '');
+            
+            var value = entry[1];
+            obj[newKey] = value;
+
+            //console.log(newPair);
+
+            
+        }); 
+        listOut.push(obj);   
+        }
+        console.log(listOut); 
+} 
+

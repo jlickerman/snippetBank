@@ -1,0 +1,39 @@
+var animals = [
+    {
+        species: 'the tiger',
+        environment: 'the rainforest',
+    },
+    {
+        species: 'the elephant',
+        environment: 'the savanna',
+    },
+    {
+        species: 'the serval',
+        environment: 'the grassland',
+    },
+]
+
+
+result = listIn(animals);
+function listIn(x) {
+    var listOut = [];
+    for (var i=0; i < x.length; i++) {
+        var obj = {};
+        console.log(x[i]); 
+        Object.entries(x[i]).forEach(entry => {
+
+            var key = entry[0];
+            var newKey = key.replace('the ', '');
+            
+            var value = entry[1];
+            var newValue = value.replace('the ', '');
+            var value = newValue;
+            obj[newKey] = value;
+           
+
+            
+        }); 
+        listOut.push(obj);   
+        }
+        console.log(listOut);
+}

@@ -1,0 +1,88 @@
+// source array of objects
+var global_users = [
+{
+
+u_first_name: 'John',
+u_last_name: 'Smith',
+u_full_name: 'John Smith',
+u_user_name: 'jsmith',
+},
+{
+u_first_name: 'Sally',
+u_last_name: 'Jones',
+u_full_name: 'Sally Jones',
+u_user_name: 'sjones',
+},
+{
+u_first_name: 'Chuck',
+u_last_name: 'Dills',
+u_full_name: 'Chuck Dills',
+u_user_name: 'cdills',
+},
+];
+
+var hr_db = [
+{
+login_name: 'jsmith',
+email: 'john.smith@example.com',
+},
+{
+login_name: 'sjones',
+email: 'sally.jones@example.com',
+},
+{
+ login_name: 'cdills',
+ email: 'chuck.dills@example.com',   
+}
+];
+
+function transformArray(sourceArray, sourceKeyPrefix, targetKeyPrefix, targetProperty) {
+    var targetArray = sourceArray.map(function(sourceObject) {
+        var targetObject = transformObject(sourceObject, sourceKeyPrefix, targetKeyPrefix, targetProperty);
+        return targetObject;
+    });
+    return targetArray;
+}
+
+function transformObject(sourceObject, sourceKeyPrefix, targetKeyPrefix, targetProperty) {
+    var targetObject = {};
+    for (var sourceKey in sourceObject) {
+        var targetKey = sourceKey.replace(sourceKeyPrefix, targetKeyPrefix);
+        var targetValue = sourceObject[sourceKey];
+        targetObject[targetKey] = targetValue;
+
+        
+        //var targetProperty = hr_db.map((entry) => entry.email);           //function to add email to this object
+        //var targetProperty = targetObject[targetKey].map(hr_db['email']);
+      
+    }
+    return targetObject;
+}
+
+var newUserRecords = transformArray(global_users, 'u_', '', hr_db);
+console.log(newUserRecords); 
+
+
+
+//for each object in array
+//push element email from hr_db
+//--------------------------------
+//one function to parse array using .map()
+//second function to parse each object using => forEach
+
+var hrEmails = hr_db.map((entry) => entry.email);
+//console.log(hrEmails);
+
+
+   
+
+   
+   
+   
+   
+   
+   //newUserRecords.forEach(Object => {newUserRecords.push(hr_db['email'])});
+
+
+
+

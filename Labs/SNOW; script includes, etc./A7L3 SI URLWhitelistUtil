@@ -1,0 +1,168 @@
+/**
+ * This is a Hybrid Script Include that consolidates
+ * Client validations and server-side validations.
+ * It is kind of a Facade pattern in that I am not
+ * re-writing Ben's original DomainChecker and DomainUtil
+ * script includes, rather consolidating them into a
+ * single evaluateDomain() function that can be called
+ * Server-Side or via a GlideAjax intermediary.
+ *
+ * By approaching this way, I am able to add properties
+ * to the result object that are valid for Client side
+ * validation requirements yet maintain the existing logic
+ * for server side validation after a response has been
+ * received from VirusTotal.
+ *
+ * The business logic below is unchanged from the original
+ * Domain Checker, e.g. what cases constitue Approve,
+ * Deny or Eval.
+ *
+ * I have used 'url' and 'domain' interchangeably but means the
+ * same thing - a 'domain name'.  The form is called URL Whitelist
+ * yet our validation is against domain names.
+ *
+ *
+ */
+var URLWhitelistUtil = (function() {
+    gs.include('global.DomainChecker');
+    gs.include('global.DomainUtil');
+
+    /**
+     *
+     * @param {text} domain single domain name (sanitized url)
+     * @param {text} approvalStep can be null or 'skynet'
+     * @param {object} responseBody can be null or full responseBody
+     */
+    function evaluateDomain(domain, approvalStep, responseBody) {
+        var checker = new global.DomainChecker();
+        var domainUtil = new global.DomainUtil();
+        domain = checker._sanitizeURL(domain);
+        var isValidIP = domainUtil.isIPv4Address(domain);
+        var isValidDomain = domainUtil.isValidDomain(domain);
+        var isWhiteListed = checker._isWhitelisted(domain);
+        var result = {
+            domain: domain,
+            pass: true,
+            decision: '',
+            comments: '',
+            alert_msg: '',
+        };
+
+        if (!isValidIP && !isValidDomain) {
+            result.pass = false;
+            result.alert_msg =
+                'The URL you entered is not a valid IP address ' +
+                'or domain name, please enter valid IP address or domain.';
+            result.decision = 'Eval';
+            result.comments = "Not a valid domain or can't evaluate";
+            return result;
+        }
+
+        if (isWhiteListed) {
+            result.pass = false;
+            result.alert_msg =
+                'The domain you entered is already whitelisted ' +
+                'you do not need to submit this request.';
+            result.decision = 'Approve';
+            result.comments = 'Domain is whitelisted globally';
+            return result;
+        }
+
+        if (isValidIP) {
+            result.decision = 'Eval';
+            result.comments = 'Cannot automatically evaluate an IP Address';
+            return result;
+        }
+        if (approvalStep === 'skynet') {
+            // 1 - Check if bad category
+            var domainCategory = responseBody.forcePointThreatSeekerCategory;
+            if (domainCategory) {
+                if (
+                    domainCategory &&
+                    checker._checkCategory(domainCategory) == 'Deny'
+                ) {
+                    result.decision = 'Deny';
+                    result.comments =
+                        'Denied based on category: ' + domainCategory;
+                    return result;
+                }
+            }
+            // Do we have webutation info?
+            if (responseBody.webutationDomainInfo) {
+                // 2 - Check the domain reputation dimensions
+                var domainSafetyScore =
+                    responseBody.webutationDomainInfo.safetyScore;
+                var minReputation = gs.getProperty(
+                    'citadel.infosec.whitelisting.rep.threshold'
+                );
+                if (domainSafetyScore && domainSafetyScore < minReputation) {
+                    result.decision = 'Deny';
+                    result.comments =
+                        'Denied based on low safety score of ' +
+                        domainSafetyScore;
+                    return result;
+                }
+
+                var domainAdultContent =
+                    responseBody.webutationDomainInfo.adultContent;
+                if (domainAdultContent && domainAdultContent == 'yes') {
+                    result.decision = 'Deny';
+                    result.comments = 'Denied based on adult content';
+                    return result;
+                }
+
+                var domainVerdict = responseBody.webutationDomainInfo.verdict;
+                if (domainVerdict && domainVerdict == 'malicious') {
+                    result.decision = 'Deny';
+                    result.comments = 'Denied based on malicious content';
+                    return result;
+                }
+            }
+            // At this point we havent rejected outright because of reputation or
+            // a bad category, so can we just straight up approve?
+            // 3 - Check the category again
+            if (
+                domainCategory &&
+                checker._checkCategory(domainCategory) == 'Approve'
+            ) {
+                result.decision = 'Approve';
+                result.comments =
+                    'Approved based on category: ' + domainCategory;
+                return result;
+            }
+
+            // We do not have enough info to either reject or deny
+            result.decision = 'Eval';
+            result.comments =
+                'Could not automatically reject nor deny based on category or reputation info';
+            return result;
+        }
+        return result;
+    }
+
+    function isMemberOf(id) {
+        var HORIZON_GROUP_ID = '10c365bcdbd8978058f8fb541d961917';
+        var PROXY_GROUP_ID = 'd941d4dedb629380e2eef3861d96194d';
+        var userId = id;
+        var gr = new GlideRecord('sys_user_grmember');
+        gr.addQuery('user.sys_id', userId);
+        gr.addQuery('group.sys_id', HORIZON_GROUP_ID);
+        gr.query();
+        var horizon = gr.hasNext();
+
+        var gr2 = new GlideRecord('sys_user_grmember');
+        gr2.addQuery('user.sys_id', userId);
+        gr2.addQuery('group.sys_id', PROXY_GROUP_ID);
+        gr2.query();
+        var proxy = gr2.hasNext();
+
+        return {
+            horizon: horizon,
+            proxy: proxy,
+        };
+    }
+    return {
+        evaluateDomain: evaluateDomain,
+        isMemberOf: isMemberOf,
+    };
+})();

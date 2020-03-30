@@ -1,0 +1,146 @@
+//Erik_2-explained.js
+
+
+// All source arrays are defined first.   No actual script code here!
+// source array of objects
+var global_users = [
+    {
+        u_first_name: 'John',
+        u_last_name: 'Smith',
+        u_full_name: 'John Smith',
+        u_user_name: 'jsmith'
+    },
+    {
+        u_first_name: 'Sally',
+        u_last_name: 'Jones',
+        u_full_name: 'Sally Jones',
+        u_user_name: 'sjones'
+    },
+    {
+        u_first_name: 'Chuck',
+        u_last_name: 'Dills',
+        u_full_name: 'Chuck Dills',
+        u_user_name: 'cdills'
+    }
+];
+
+
+// data to add to transformed array of objects
+// *** Note:  We should modify this Array to include 'Chuck Dills'
+var hr_db = [
+    {
+        login_name: 'jsmith',
+        email: 'john.smith@example.com'
+    },
+    {
+        login_name: 'sjones',
+        email: 'sally.jones@example.com'
+    },
+    {
+        login_name: 'cdills',
+        email: 'chuck.dills@example.com'
+    }
+];
+// End of variable initialization
+
+
+//  ----------------------------------  FUNCTIONS  --------------------------------------
+// This is the TOP of the function set.  It is called by the script to process everything
+// Using functions like this is 
+
+
+// transformArray function - the initial function to be called to start the transform process
+// sourceArray      =   gobal_users     (Array containing 3 objects)
+// sourceKeyPrefix  =   'u_'            (string literal of the item to be found and replaced in each key)
+// targetKeyPrefix  =   ''              (string literal of *blank* string that will be replacing the the found key segment)
+function transformArray(sourceArray, sourceKeyPrefix, targetKeyPrefix) {  
+// sourceArray.map is an array method in javascript that creates a loop through each item contained within the array.
+// each loop executes an 'annonymous function' 
+// within the annonymous function is the execution of a variable function that calls transformObject gives it only 1 object (out of 3)
+//      then gives it the values that need to be replaced ('u_' and '')
+// When the Transform object is done, it passes the modified object back to the targetObject with returns the value to targetArray.
+//      this happens for every element in the array.
+// Each item in the array is an object containing 4 items so must be broken down further...
+// 
+var targetArray = sourceArray.map(function(sourceObject) {   // sourceObject is the individual object that is selected by the .map method
+var targetObject = transformObject(sourceObject, sourceKeyPrefix, targetKeyPrefix);
+//var targetObject = {};
+return targetObject;
+});
+return targetArray;   // when all of the objects are returned to the new array it is returned to the calliung script...
+}
+
+// transformObject function - modifies each object sent to it from the array function
+function transformObject(sourceObject, sourceKeyPrefix, targetKeyPrefix) {
+var targetObject = {};                              // Create an empty object that we will now populate using the rest of this function
+for (var sourceKey in sourceObject) {               // 'sourceKey' represents the actual key of the entry JSON pair (example of first repetition: u_first_name)
+var targetKey = sourceKey.replace(sourceKeyPrefix, targetKeyPrefix);  // replace method is is used on a string variable to find and replace its contents.
+                                                              // In this case it is only acting on the key. 
+var targetValue = sourceObject[sourceKey];      // the value of this element (selected by the loop) is saved.
+
+targetObject[targetKey] = targetValue;          // the new key is given the saved value.  (Example: first_name: John)
+                                        // this equation is also adding the JSON value pair to the newly created object.
+}
+return targetObject;                                // All of the items in the object have been looped through and a new object has been completed
+                                        // The ocompleted object is returned.
+}
+
+// addToObject function - add data from an array.
+// sourceArray is 'hr_db'
+// targetArray is updatedUsers - the result of the first function steps - being called by ln 126
+
+function addToObject(sourceArray, targetArray) {
+var updatedTargetArray = [];                        // Create a new array to populate with the rest of this function
+targetArray.forEach(function(targetObj) {           // targetObj is a name that represents each individual object in the targetArray
+var matchedSourceObj = findMatchedObject(sourceArray, targetObj);  
+    if (matchedSourceObj) {
+targetObj.email = matchedSourceObj.email;  // formatting change
+
+//updatedTargetArray.push(targetObj);      - why do we need this?
+}
+updatedTargetArray.push(targetObj);             // write the updated object to the new array.
+});
+var deDuped = updatedTargetArray.filter(function(obj, index) {
+return updatedTargetArray.indexOf(obj) >= index;
+});
+return deDuped;
+}
+
+// findMatchedObject function
+function findMatchedObject(sourceArray, targetObj) {
+var matchedSourceObj = sourceArray.filter(function(sourceObj) {     // Whatever the result of the filter is will populate "sourceObj"
+return sourceObj.login_name === targetObj.user_name;            // Original Array 'user_name' needs to match the new arrays 'login_name'}
+});
+return matchedSourceObj[0];  
+}                                     // the second property of the object is the desired}
+
+ 
+
+//console.log(updatedTargetArray);
+
+// 
+//  This is the bottom of the function set
+//  ----------------------------------  FUNCTIONS  --------------------------------------
+
+
+
+// ACTUAL Start of script ****************************************************************
+//
+var updatedUsers = transformArray(global_users, 'u_', '');  // Calls the 1st function:  transformArray and passes 3 parameters
+                                            // global_user s     An array variable that was defined at the top of this page
+                                            //'u_'              A string literal
+                                            // ''               A string literal
+                                            // transformArray is called in order to remove the 'u_' from each key value pair.
+
+                                            // After the transformArray function returns a value it is assigned to 'updatedUsers'
+                                            // 'updatedUsers' now looks like global_user array, except without the 'u_' keys.
+                                            //  updatedUsers    An array variable similar to global_users
+
+
+var result = addToObject(hr_db, updatedUsers);     // Now lets call the 'addToObject' function: passing 2 parameters
+                                            // hr_db            An array variable containing objects to be added to updatedUsers
+                                            // updatedUsers     An array variable with new object content
+
+                                            // After the addToObject function returns a value it is assigned to the final 'result' 
+                                            // 'result' is a an array variable that should contain an array with the added hr_db info
+                                            console.log(updatedUsers); 

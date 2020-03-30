@@ -1,0 +1,87 @@
+/*function sumTwoSmallestNumbers(numbers) {
+    const smallest = Math.min.apply(null, numbers);
+    const smallestIndex = numbers.indexOf(smallest);
+    const numbersWithoutSmallest = numbers.slice();
+    const numbersWithoutSmallest.splice(smallestIndex, 1);
+    const secondSmallest = Math.min.apply(null, numbersWithoutSmallest);
+    return smallest + secondSmallest;
+}
+
+var data = [
+    1, 4, 2, 9,
+]
+
+var test = sumTwoSmallestNumbers(data);
+
+console.log(test);
+*/
+
+/////////////
+////////////
+/*
+var tktm_urls = [ 
+    14, 
+    4, 
+    3
+]
+ 
+function sendRequests() {
+    let sum = 0;
+    for (let i = 0; i < arguments.length; i++) {
+        sum += arguments[i];
+    }
+    return sum;
+}
+
+var testing = sendRequests.apply(null, tktm_urls);
+
+console.log(testing);
+*/
+//////////////////////
+/////////////////////
+
+/*
+var tktm_urls = [ 
+    'pig.com', 
+    'blogspot.com', 
+    'play-doh.com'
+];
+ 
+function sendRequests() {
+    let sum = 0;
+    for (let i = 0; i < arguments.length; i++) {
+        sum += arguments[i];
+    }
+    return sum;
+};
+
+var testing = sendRequests.apply(null, tktm_urls);
+
+console.log(testing);
+*/
+///////////////////////////////
+//////////////////////////////
+// Kata: return masked string 
+function maskify(cc) {
+    // a place to store the masked number
+    let masked = ''; 
+
+    // iterate over the string in reverse
+    for (let i = cc.length - 1; i >= 0; i-- ) {
+        const letter = cc[i];
+        //if the current index is greater than length - 4
+        if (i > cc.length - 5) {
+            // append the letter to the masked number
+             masked = letter + masked;
+        } else {
+            // append a # 
+           masked = '#' + masked;
+        }
+    }
+    return masked; 
+} 
+
+var cardNumber = 'aifjaifasfglaadca'
+console.log(maskify(cardNumber));
+
+

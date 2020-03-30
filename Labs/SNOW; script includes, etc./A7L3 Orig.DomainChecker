@@ -1,0 +1,238 @@
+var DomainChecker = Class.create();
+DomainChecker.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+    // Validate site against all the documented categories
+    _checkCategory: function(domainCat) {
+        var gr = new GlideRecord('u_domain_whitelisting_category');
+        gr.addQuery('u_category', domainCat);
+        gr.query();
+        if (gr.next()) {
+            return gr.u_decision;
+        } else {
+            return 'Unknown';
+        }
+    },
+
+    // Is the URL and IP address?
+    _isIP: function(domainStr) {
+        var util = new global.DomainUtil();
+        return util.isIPv4Address(domainStr);
+    },
+
+    _isValidDomain: function(domainStr) {
+        var util = new global.DomainUtil();
+        return util.isValidDomain(domainStr);
+    },
+
+    // Clean up the information entered by the user
+    _sanitizeURL: function(domainStr) {
+        var util = new global.DomainUtil();
+        return util.extractHostname(domainStr);
+    },
+
+    _isWhitelisted: function(domainStr) {
+        var globalWhitelist = gs.getProperty('citadel.infosec.whitelisting.always.approve').split(',');
+        var util = new ArrayUtil();
+        if (util.contains(globalWhitelist, domainStr.trim())) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+
+    // Call SkyNet to check on a given domain
+    _getDomainInfo: function(domainStr) {
+        domainStr = domainStr.toString();
+        try {
+            var sanitizedURL = this._sanitizeURL(domainStr);
+
+            var queue = new x_cita2_iq.Queue();
+            /*var grQueue = queue.request({
+				method: 'get',
+				url: '/utilities/virustotal/' + sanitizedURL,
+				sync: true
+			});
+			*/
+            var grQueue = queue.request({
+                config: 'global.gbl_EvaluateDomain',
+                params: {
+                    domain: sanitizedURL
+                },
+                parent_task: current.sys_id
+            });
+
+            var response = queue.getResponse(grQueue.sys_id);
+            return response.body;
+        } catch (e) {
+            gs.error('Domain Checker - Error getting domain info: ' + e);
+            return null;
+        }
+    },
+
+    // Call SkyNet with the appropriate info to get the list of categories for a given domain
+    // Get category, safety score, adult content, verdict, and make a decision based on that
+    // Response sample:
+    // {
+    //   "domain": "cnn.com",
+    //   "decision": "Approve", // Or Deny, or Eval
+    //   "comments": "Automatically approved based on category: news"
+    // }
+    checkDomain: function(domainStr) {
+        // Add a sleep element to make sure we stay under the virustotal max API rate of 4 per minute
+        gs.sleep(10000);
+
+        var result = {};
+        result.domain = domainStr;
+        result.loginfo = '';
+
+        // 0 - Check if IP - we skip everything since we cannot evaluate those
+        if (this._isIP(domainStr)) {
+            result.decision = 'Eval';
+            result.comments = 'Cannot automatically evaluate an IP Address';
+            return result;
+        }
+
+        // 0.5 - if the domain is whitelisted to begin with, no need to go to virustotal
+        if (this._isWhitelisted(domainStr)) {
+            result.decision = 'Approve';
+            result.comments = 'Domain is whitelisted globally';
+            return result;
+        }
+
+        // 0.8 - make sure the domain is valid before calling SkyNet with dirty data
+        if (!this._isValidDomain(domainStr)) {
+            result.decision = 'Eval';
+            result.comments = "Not a valid domain or can't evaluate";
+            return result;
+        }
+
+        // We now dive deeper into the domain
+        var domainInfo = this._getDomainInfo(domainStr);
+        result.loginfo = domainStr + ': ' + JSON.stringify(domainInfo);
+
+        try {
+            // 1 - Check if bad category
+            var domainCategory = domainInfo.forcePointThreatSeekerCategory;
+            if (JSUtil.notNil(domainCategory) && this._checkCategory(domainCategory) == 'Deny') {
+                result.decision = 'Deny';
+                result.comments = 'Denied based on category: ' + domainCategory;
+                return result;
+            }
+
+            // Do we have webutation info?
+            if (JSUtil.notNil(domainInfo.webutationDomainInfo)) {
+                // 2 - Check the domain reputation dimensions
+                var domainSafetyScore = domainInfo.webutationDomainInfo.safetyScore;
+                var minReputation = gs.getProperty('citadel.infosec.whitelisting.rep.threshold');
+                if (JSUtil.notNil(domainSafetyScore) && domainSafetyScore < minReputation) {
+                    result.decision = 'Deny';
+                    result.comments = 'Denied based on low safety score of ' + domainSafetyScore;
+                    return result;
+                }
+
+                var domainAdultContent = domainInfo.webutationDomainInfo.adultContent;
+                if (JSUtil.notNil(domainAdultContent) && domainAdultContent == 'yes') {
+                    result.decision = 'Deny';
+                    result.comments = 'Denied based on adult content';
+                    return result;
+                }
+
+                var domainVerdict = domainInfo.webutationDomainInfo.verdict;
+                if (JSUtil.notNil(domainVerdict) && domainVerdict == 'malicious') {
+                    result.decision = 'Deny';
+                    result.comments = 'Denied based on malicious content';
+                    return result;
+                }
+            }
+
+            // At this point we havent rejected outright because of reputation or a bad category, so can we just straight up approve?
+            // 3 - Check the category again
+            //if (JSUtil.notNil(domainCategory) && this._checkCategory(domainCategory) == 'Approve'){
+            if (JSUtil.notNil(domainCategory) && this._checkCategory(domainCategory) == 'Approve') {
+                result.decision = 'Approve';
+                result.comments = 'Approved based on category: ' + domainCategory;
+                return result;
+            }
+
+            // We do not have enough info to either reject or deny
+            result.decision = 'Eval';
+            result.comments = 'Could not automatically reject nor deny based on category or reputation info';
+            return result;
+        } catch (e) {
+            gs.log(e);
+            // Some error happened with the domain checking, we do not have enough info to either reject or deny
+            result.decision = 'Eval';
+            result.comments = 'Could not automatically reject nor deny';
+            return result;
+        }
+    },
+
+    // Go through a list of comma or semi-colon separated domains and return a big object giving us the results
+    // Sample output:
+    // [
+    //   {
+    //     "domain":"cnn.com",
+    //     "decision":"Approve",
+    //     "comments":"Automatically approved based on category: news and media"
+    //   },
+    //   {
+    //     "domain":"youtube.com",
+    //     "decision":"Eval",
+    //     "comments":"Could not automatically reject nor deny based on category or reputation info"
+    //   }
+    // ]
+    checkDomains: function(domainStr) {
+        var output = [];
+        //var domainArr = domainStr.split((/;|,|\r\n/)); Service Portal uses \n for mulitline carriage returns, native UI uses \r\n
+        //We also split by spaces in case people don't read instructions on the forms
+        var domainArr = domainStr.split(/;|,|\r\n|\n|\s/);
+        for (var i = 0; i < domainArr.length; i++) {
+            if (domainArr[i].trim() != '') {
+                var domainCheck = this.checkDomain(domainArr[i].trim());
+                output.push(domainCheck);
+            }
+        }
+        return output;
+    },
+
+    // Format the output to send to the auto verification notes
+    formatComments: function(obj) {
+        var output = '';
+        var loginfo = '';
+        for (var i = 0; i < obj.length; i++) {
+            output += obj[i].decision + ': ' + obj[i].domain + ' (' + obj[i].comments + ')\r\n';
+            loginfo += obj[i].loginfo + '\r\n';
+        }
+        return output + '\r\nEvaluation log:\r\n' + loginfo;
+        //return output;
+    },
+
+    // Make overall decision:
+    // All Approve: Approve
+    // Any Deny: Deny
+    // Else: Eval
+    makeDecision: function(domainStr) {
+        domainStr = domainStr.toString();
+        var resultStr = '';
+        var mainDecision = '';
+        var evalDomains = this.checkDomains(domainStr);
+        var approve = true;
+        var deny = true;
+        for (var k = 0; k < evalDomains.length; k++) {
+            if (evalDomains[k].decision != 'Approve') approve = false;
+            if (evalDomains[k].decision != 'Deny') deny = false;
+        }
+        if (approve) {
+            mainDecision = 'Approve';
+        } else if (deny) {
+            mainDecision = 'Deny';
+        } else {
+            mainDecision = 'Eval';
+        }
+        return {
+            decision: mainDecision,
+            comments: this.formatComments(evalDomains)
+        };
+    },
+
+    type: 'DomainChecker'
+});

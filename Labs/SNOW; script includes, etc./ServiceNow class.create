@@ -1,0 +1,31 @@
+/* 1. ServiceNow class.create . *** object written using Pascal notation (first
+letter uppercase). See Script Include 'PrototypeServer' which is based off of
+prototype.js library.
+*/
+
+var Person = Class.create();
+Person.prototype = {
+initialize: function (first, last) {
+this.first = first || 'Default';
+this.last = last || 'Default';
+this.getFullName = function () {
+return this.last + ', ' + this.first;
+}
+// return this; is implied
+},
+
+getFormalName: function () {
+return this.last + ', ' + this.first;
+
+},
+
+/* 'type' property is not mandatory, but is useful for logging a friendly name
+for the script include that is being invoked.
+*/
+type: 'Person'
+};
+
+/// how to use/
+var sally = new Person('Sally', 'Smith');
+sally.getFullName();
+sally.getFormalName();
